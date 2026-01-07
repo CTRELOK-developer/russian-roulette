@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Русская рулетка — игра</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      -webkit-touch-callout: none;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+
+    body {
+      margin: 0;
+      padding: 10px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+      background: radial-gradient(circle at top, #3b3b5c, #111);
+      color: #fff;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow-x: hidden;
+    }
+
+    .container {
+      text-align: center;
+      padding: 1.5rem;
+      background: rgba(0,0,0,0.65);
+      border-radius: 20px;
+      box-shadow: 0 12px 30px rgba(0,0,0,0.6);
+      width: 100%;
+      max-width: 500px;
+      position: relative;
+      z-index: 2;
+    }
+
+    h1 {
+      margin: 0 0 0.8rem 0;
+      font-size: clamp(1.5rem, 5vw, 2.5rem);
+      letter-spacing: 1px;
+    }
+
+    p {
+      margin: 0.4rem 0;
+      opacity: 0.9;
+      font-size: clamp(0.9rem, 2.5vw, 1rem);
+      line-height: 1.4;
+    }
+
+    .stats {
+      margin: 1rem 0;
+      font-size: clamp(0.85rem, 2vw, 1rem);
+      opacity: 0.95;
+      padding: 0.8rem;
+      background: rgba(255,255,255,0.05);
+      border-radius: 12px;
+    }
+
+    .stats span {
+      display: block;
+      margin: 0.3rem 0;
+    }
+
+    .stats strong {
+      color: #4caf50;
+      font-weight: bold;
+    }
+
+    .btn-row {
+      margin: 1.2rem 0;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 0.6rem;
+    }
+
+    .btn-small {
+      padding: 0.7rem 1.2rem;
+      font-size: clamp(0.8rem, 2vw, 0.95rem);
+      background: #424242;
+      color: #fff;
+      border: none;
+      border-radius: 25px;
+      cursor: pointer;
+      font-weight: bold;
+      letter-spacing: 0.5px;
+      transition: all 0.15s ease;
+      min-height: 44px;
+      active: opacity(0.8);
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .btn-small:active {
+      opacity: 0.8;
+      transform: scale(0.95);
+    }
+
+    .btn-main {
+      width: 100%;
+      max-width: 100%;
+      margin-top: 1.2rem;
+      padding: 1rem;
+      background: #e53935;
+      color: #fff;
+      font-size: clamp(1rem, 3vw, 1.2rem);
+      border: none;
+      border-radius: 25px;
+      cursor: pointer;
+      font-weight: bold;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      transition: all 0.15s ease;
+      min-height: 50px;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .btn-main:active {
+      opacity: 0.9;
+      transform: scale(0.98);
+    }
+
+    #restartBigBtn {
+      background: #ffc107;
+      color: #222;
+    }
+
+    #restartBigBtn:active {
+      background: #ffb300;
+    }
+
+    .result {
+      margin-top: 1.5rem;
+      font-size: clamp(1.2rem, 4vw, 1.8rem);
+      font-weight: bold;
+      min-height: 2.2rem;
+      line-height: 1.3;
+    }
+
+    .alive {
+      color: #4caf50;
+    }
+
+    .dead {
+      color: #ff5252;
+    }
+
+    .info {
+      margin-top: 0.8rem;
+      font-size: clamp(0.85rem, 2vw, 1rem);
+      opacity: 0.9;
+      min-height: 1.5rem;
+      line-height: 1.4;
+    }
+
+    .note {
+      margin-top: 1.2rem;
+      font-size: 0.8rem;
+      opacity: 0.65;
+      line-height: 1.3;
+    }
+
+    .blood-overlay {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background:
+        radial-gradient(circle at 20% 20%, rgba(255,0,0,0.55), transparent 60%),
+        radial-gradient(circle at 80% 30%, rgba(180,0,0,0.7), transparent 55%),
+        radial-gradient(circle at 30% 80%, rgba(120,0,0,0.6), transparent 55%);
+      opacity: 0;
+      transition: opacity 0.2s ease;
+      z-index: 5;
+    }
+
+    .blood-overlay.visible {
+      opacity: 1;
+    }
+
+    @media (max-width: 480px) {
+      .container {
+        padding: 1.2rem;
+        border-radius: 16px;
+      }
+
+      .btn-row {
+        gap: 0.5rem;
+      }
+
+      h1 {
+        margin-bottom: 0.6rem;
+      }
+
+      p {
+        margin: 0.3rem 0;
+      }
+    }
+
+    @media (min-width: 481px) {
+      body {
+        padding: 20px;
+      }
+
+      .container {
+        max-width: 500px;
+      }
+    }
+  </style>
+
+  <audio id="soundClick" src="click.mp3" preload="auto"></audio>
+  <audio id="soundShot" src="shot.mp3" preload="auto"></audio>
+  <audio id="soundHeadshot" src="headshot.mp3" preload="auto"></audio>
+</head>
+<body>
+  <div class="container">
+    <h1>🎰 Русская рулетка</h1>
+    
+    <div class="stats">
+      <span>📊 Пуль без смерти: <strong id="streak">0</strong></span>
+      <span>🏆 Рекорд: <strong id="best">0</strong></span>
+    </div>
+
+    <p>Нажми <strong>«Крутить барабан»</strong>, чтобы выбрать смертельный слот (1–6).</p>
+    <p>Потом стреляй по порядку: 1, 2, 3, 4, 5, 6.</p>
+
+    <div class="btn-row" id="topButtons">
+      <button class="btn-small" id="spinBtn">🔄 Крутить барабан</button>
+    </div>
+
+    <button class="btn btn-main" id="shootBtn">💥 Стрелять (1–6)</button>
+
+    <div id="result" class="result"></div>
+    <div id="info" class="info"></div>
+
+    <button class="btn btn-main" id="restartBigBtn"
+            style="display:none;">
+      🔁 Рестарт
+    </button>
+
+    <p class="note">
+      ⚠️ Это игра.  
+      Лучше не пытайся повторять подобное в реальной жизни если ты адекват.
+    </p>
+  </div>
+
+  <div id="bloodOverlay" class="blood-overlay"></div>
+
+  <script>
+    let deadlySlot = null;
+    let currentSlot = 1;
+    let aliveStreak = 0;
+    let bestStreak = 0;
+    let isDead = false;
+    let audioUnlocked = false;
+
+    const resultEl = document.getElementById('result');
+    const infoEl = document.getElementById('info');
+    const streakEl = document.getElementById('streak');
+    const bestEl = document.getElementById('best');
+    const spinBtn = document.getElementById('spinBtn');
+    const shootBtn = document.getElementById('shootBtn');
+    const restartBigBtn = document.getElementById('restartBigBtn');
+    const topButtons = document.getElementById('topButtons');
+    const bloodOverlay = document.getElementById('bloodOverlay');
+
+    const soundClick = document.getElementById('soundClick');
+    const soundShot = document.getElementById('soundShot');
+    const soundHeadshot = document.getElementById('soundHeadshot');
+
+    function loadBest() {
+      const saved = localStorage.getItem('rr_best_streak');
+      if (saved !== null) {
+        bestStreak = parseInt(saved, 10) || 0;
+      }
+      bestEl.textContent = bestStreak;
+    }
+
+    function saveBest() {
+      localStorage.setItem('rr_best_streak', String(bestStreak));
+    }
+
+    function updateStats() {
+      streakEl.textContent = aliveStreak;
+      bestEl.textContent = bestStreak;
+    }
+
+    function showOnlyDeathUI() {
+      topButtons.style.display = 'none';
+      shootBtn.style.display = 'none';
+      restartBigBtn.style.display = 'block';
+      bloodOverlay.classList.add('visible');
+    }
+
+    function showGameUI() {
+      topButtons.style.display = 'flex';
+      shootBtn.style.display = 'block';
+      restartBigBtn.style.display = 'none';
+      bloodOverlay.classList.remove('visible');
+    }
+
+    function spinChamber() {
+      deadlySlot = Math.floor(Math.random() * 6) + 1;
+      currentSlot = 1;
+      isDead = false;
+      resultEl.textContent = '';
+      resultEl.className = 'result';
+      infoEl.textContent = 'Смертельный слот выбран. Начинай стрелять с позиции 1.';
+      showGameUI();
+    }
+
+    function restartGame() {
+      aliveStreak = 0;
+      updateStats();
+      deadlySlot = null;
+      currentSlot = 1;
+      isDead = false;
+      resultEl.textContent = '';
+      resultEl.className = 'result';
+      infoEl.textContent = 'Крути барабан, чтобы начать.';
+      showGameUI();
+    }
+
+    function shoot() {
+      if (isDead) return;
+      if (deadlySlot === null) {
+        infoEl.textContent = 'Сначала крути барабан!';
+        return;
+      }
+      if (currentSlot > 6) {
+        infoEl.textContent = 'Барабан пуст. Крути его заново.';
+        return;
+      }
+
+      if (currentSlot === deadlySlot) {
+        isDead = true;
+
+        try {
+          soundShot.currentTime = 0;
+          soundShot.play();
+        } catch(e) {}
+
+        setTimeout(() => {
+          try {
+            soundHeadshot.currentTime = 0;
+            soundHeadshot.play();
+          } catch(e) {}
+        }, 150);
+
+        resultEl.textContent = '💀 Ты умер на слоте ' + currentSlot + '!';
+        resultEl.className = 'result dead';
+        infoEl.textContent = '';
+        showOnlyDeathUI();
+
+        if (aliveStreak > bestStreak) {
+          bestStreak = aliveStreak;
+          saveBest();
+          updateStats();
+        }
+      } else {
+        try {
+          soundClick.currentTime = 0;
+          soundClick.play();
+        } catch(e) {}
+
+        resultEl.textContent = '✅ Щёлк! Пусто ты всё ближе к смерти,ты на слоте ' + currentSlot + '.';
+        resultEl.className = 'result alive';
+        aliveStreak += 1;
+        updateStats();
+        currentSlot += 1;
+
+        if (currentSlot > 6) {
+          infoEl.textContent = 'Все 6 слотов пустые, я забыл положить патрон😐. Крути барабан ещё раз.';
+        } else {
+          infoEl.textContent = 'Дальше идёт слот № ' + currentSlot + '.';
+        }
+      }
+    }
+
+    function unlockAudio() {
+      if (audioUnlocked) return;
+      audioUnlocked = true;
+      [soundClick, soundShot, soundHeadshot].forEach(a => {
+        try {
+          a.muted = true;
+          a.play().finally(() => {
+            a.pause();
+            a.currentTime = 0;
+            a.muted = false;
+          });
+        } catch(e) {}
+      });
+    }
+
+    document.body.addEventListener('touchstart', unlockAudio, { once: true });
+    document.body.addEventListener('click', unlockAudio, { once: true });
+
+    spinBtn.addEventListener('click', spinChamber);
+    restartBigBtn.addEventListener('click', restartGame);
+    shootBtn.addEventListener('click', shoot);
+
+    loadBest();
+    updateStats();
+    infoEl.textContent = 'Крути барабан, чтобы умереть быстрее).';
+  </script>
+</body>
+</html>
